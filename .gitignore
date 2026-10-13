@@ -1,0 +1,16 @@
+
+# --- GitHub rollout (2026-10-13) ---
+releases/
+*.zip
+*.log
+*.log.*
+*.bak
+*.bak-*
+*.bak_*
+.env
+.env.*
+node_modules/
+__pycache__/
+build/*.exe
+build/*.png
+release/
