@@ -15,7 +15,7 @@ namespace MiniTrayMon
     public class TrayApp : Form
     {
         private const string AppName = "MiniTrayMon";
-        private const string Version = "1.5.0";
+        private const string Version = "1.5.1";
         private const int PollIntervalMs = 1500;
 
         private readonly NotifyIcon _tray;
@@ -447,11 +447,14 @@ namespace MiniTrayMon
             Application.Exit();
         }
 
-        // Keep form hidden on startup
+        // The main form is only a message host for the tray icon: it must never be
+        // shown. Application.Run() calls SetVisibleCore(true); the old code passed that
+        // through while the handle did not exist yet, so Windows showed the form as a
+        // minimized caption bar above the taskbar that could not be closed (v1.5.1 fix).
         protected override void SetVisibleCore(bool value)
         {
+            if (!IsHandleCreated) CreateHandle();
             base.SetVisibleCore(false);
-            if (!IsHandleCreated) base.SetVisibleCore(value);
         }
 
         protected override void Dispose(bool disposing)

@@ -27,11 +27,11 @@ echo.
 
 :: Collect all .cs files
 set "CS_FILES="
-for %%f in ("%SRC_DIR%\*.cs") do call :append "%%f"
+:: PixelVerify.cs and TestHarness.cs are dev tools with their own Main(); keep them out of the app exe
+for %%f in ("%SRC_DIR%\*.cs") do if /i not "%%~nf"=="PixelVerify" if /i not "%%~nf"=="TestHarness" call :append "%%f"
 
 "%CSC%" /target:winexe /out:"%OUT_EXE%" /nologo /optimize+ /warn:4 ^
-    /define:RELEASE;TRACE ^
-    /win32icon:NUL ^
+    /define:RELEASE;TRACE /main:MiniTrayMon.Program ^
     %CS_FILES%
 
 if errorlevel 1 (

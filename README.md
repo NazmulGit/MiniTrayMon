@@ -4,7 +4,7 @@
 
 - **Live icon styles:** numeric row, vertical bars, CPU-only variants and four icon scales.
 - **Zero install dependencies**, single self-contained exe, 1.5 s poll interval, start-up installer script.
-- **Current release:** v1.5.0 · license MIT
+- **Current release:** v1.5.1 · license MIT
 
 > Status: private repository.
 
