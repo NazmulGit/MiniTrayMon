@@ -1,0 +1,24 @@
+{
+  "repo": "NazmulGit/MiniTrayMon",
+  "env": {},
+  "version": {
+    "file": "VERSION",
+    "cargo_toml": "Cargo.toml",
+    "changelog": "CHANGELOG.md",
+    "required": false
+  },
+  "ci": [
+    {
+      "name": "check",
+      "cmd": [
+        "python",
+        "-I",
+        "D:\\Code_Dev\\Scripts\\CI-Kit\\cikit.py",
+        "--repo",
+        ".",
+        "check"
+      ],
+      "timeout_min": 15
+    }
+  ]
+}

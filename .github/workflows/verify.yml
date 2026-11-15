@@ -1,0 +1,74 @@
+# CI-Kit verify (template v0.1.0). Light GitHub-side checks, about 1 billed minute. Heavy build/test CI runs locally
+# (`cikit ci`) and reports here as the commit status "local-ci".
+#   push (main, ci/**, release/**): version consistency, secret scan, workflow lint
+#   tag v*.*.*: the same, plus the tag must equal VERSION and the tagged commit must have local-ci = success
+name: verify
+
+on:
+  push:
+    branches: [main, master, "ci/**", "release/**"]
+    tags: ["v*.*.*"]
+  pull_request:
+
+permissions:
+  contents: read
+  statuses: read
+
+concurrency:
+  group: verify-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      GITLEAKS_VERSION: 8.30.1
+      GITLEAKS_SHA256: 551f6fc83ea457d62a0d98237cbad105af8d557003051f41f3e7ca7b3f2470eb
+      ACTIONLINT_VERSION: 1.7.12
+      ACTIONLINT_SHA256: 8aca8db96f1b94770f1b0d72b6dddcb1ebb8123cb3712530b08cc387b349a3d8
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
+
+      - name: Version consistency (VERSION = Cargo.toml = CHANGELOG [= tag])
+        run: |
+          if [ "${GITHUB_REF_TYPE}" = "tag" ]; then
+            python3 .github/cikit/verify.py version --tag "${GITHUB_REF_NAME}"
+          else
+            python3 .github/cikit/verify.py version
+          fi
+
+      - name: Secret scan (gitleaks, pinned + sha256)
+        run: |
+          curl -sSfL -o /tmp/gl.tgz "https://github.com/gitleaks/gitleaks/releases/download/v${GITLEAKS_VERSION}/gitleaks_${GITLEAKS_VERSION}_linux_x64.tar.gz"
+          echo "${GITLEAKS_SHA256}  /tmp/gl.tgz" | sha256sum -c -
+          tar -xzf /tmp/gl.tgz -C /tmp gitleaks
+          if [ -f .gitleaks.toml ]; then
+            /tmp/gitleaks dir . --config .gitleaks.toml --redact --no-banner --exit-code 1
+          else
+            /tmp/gitleaks dir . --redact --no-banner --exit-code 1
+          fi
+
+      - name: Workflow lint (actionlint, pinned + sha256)
+        run: |
+          curl -sSfL -o /tmp/al.tgz "https://github.com/rhysd/actionlint/releases/download/v${ACTIONLINT_VERSION}/actionlint_${ACTIONLINT_VERSION}_linux_amd64.tar.gz"
+          echo "${ACTIONLINT_SHA256}  /tmp/al.tgz" | sha256sum -c -
+          tar -xzf /tmp/al.tgz -C /tmp actionlint
+          /tmp/actionlint -color
+
+      - name: PHP lint (only when the repo has PHP files; the hub PC has no PHP)
+        run: |
+          if git ls-files -z '*.php' | grep -qz .; then
+            git ls-files -z '*.php' | grep -zv -e '^legacy/' -e '/vendor/' | xargs -0 -r -n1 php -l > /tmp/phplint.txt 2>&1 || { grep -v '^No syntax errors' /tmp/phplint.txt; exit 1; }
+            echo "php -l: $(grep -c '^No syntax errors' /tmp/phplint.txt) files OK"
+          else
+            echo "no PHP files"
+          fi
+
+      - name: Local CI gate (tags only)
+        if: github.ref_type == 'tag'
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: python3 .github/cikit/verify.py local-ci --repo "${GITHUB_REPOSITORY}" --sha "${GITHUB_SHA}"

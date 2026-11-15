@@ -1,0 +1,12 @@
+# CI-Kit template v0.1.0. Security updates (CVE fixes) are switched on in the repo settings and need no entry here.
+# This file only keeps the SHA-pinned GitHub Actions current: one grouped PR a month, never auto-merged.
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: monthly
+    groups:
+      actions:
+        patterns: ["*"]
+    open-pull-requests-limit: 2
